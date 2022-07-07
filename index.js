@@ -311,6 +311,42 @@ app.get("/user/address", userAuthentication, (req, res) => {
   });
 });
 
+app.post("/user/address/add",userAuthentication,urlencodedParser,(req, res) => {
+  if (!req.body.street) res.status(400).send({ err: "enter street" });
+  else if(!req.body.city) res.status(400).send({ err:"enter city"});
+  else if(!req.body.pincode) res.status(400).send({ err:"enter pincode"});
+  else if(!req.body.state) res.status(400).send({ err:"enter state"});
+  else if(!req.body.country) res.status(400).send({ err:"enter country"});
+  else{
+    var sql ="INSERT INTO useraddresses(user_id, street, city, pincode, state, country) values ('" +
+      req.decoded.data.user_id +
+      "','" +
+      req.body.street +
+      "','" +
+      req.body.city +
+      "','" +
+      req.body.pincode +
+      "','" +
+      req.body.state +
+      "','" +
+      req.body.country +
+      "')";
+    con.query(sql, function (err, result) {
+      if (err) throw err;
+      res.status(200).send({
+        message: "success",
+        data: {
+          userid: req.decoded.data.user_id,
+          street: req.body.street,
+          city: req.body.city,
+          pincode: req.body.pimcode,
+          state: req.body.state,
+          country: req.body.country,
+        },
+      });
+    });
+  }
+});
 
 app.listen(PORT, () => {
   console.log(`listening on port ${PORT}`);
