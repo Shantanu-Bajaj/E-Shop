@@ -225,6 +225,44 @@ app.post("/admin/logout", adminAuthentication, (req, res) => {
   });
 });
 
+
+//USER ROUTES
+app.post("/user/register", urlencodedParser, (req, res) => {
+  var sqll = "SELECT email FROM users WHERE email='" + req.body.email + "'";
+  con.query(sqll, function (err, result) {
+    if (err) throw err;
+    if (!result.length) {
+      if (req.body.password.length < 6) {
+        res.status(401).send({ err: "Password length should be at least 6 characters" });
+      } else {
+        var sql ="INSERT INTO users (name, email, password, phone) VALUES ('" +
+          req.body.name +
+          "','" +
+          req.body.email +
+          "','" +
+          req.body.password +
+          "','" +
+          req.body.phone +
+          "')";
+        con.query(sql, function (err, results) {
+          if (err) throw err;
+          res.status(200).send({message: "success",
+            data: {
+              name: req.body.name,
+              email: req.body.email,
+              password: req.body.password,
+              phone: req.body.phone,
+            },
+          });
+        });
+      }
+    } else {
+      res.status(401).send({ err: "Email already exists" });
+    }
+  });
+});
+
+
 app.listen(PORT, () => {
   console.log(`listening on port ${PORT}`);
 }); 
