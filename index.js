@@ -262,6 +262,37 @@ app.post("/user/register", urlencodedParser, (req, res) => {
   });
 });
 
+app.get("/user/login", urlencodedParser, (req, res) => {
+  if (req.body.email && req.body.password) {
+    var sql ="SELECT * FROM users WHERE email = '" +req.body.email +"' AND password = '" +req.body.password +"'";
+    con.query(sql, function (err, result) {
+      if (err) throw err;
+      if (result.length) {
+        let userToken = jwt.sign({ data: result[0] },process.env.USER_SECRET_KEY,{ expiresIn: 604800 });
+        var sql1 ="INSERT INTO usertoken (email, token) values ('" +req.body.email +"', '" +userToken +"')";
+        con.query(sql1, function (err, result) {
+          if (err) throw err;
+        });
+        res.send({message: "success",token: userToken,
+          data: {
+            userid: result[0].userid,
+            name: result[0].name,
+            email: result[0].email,
+            password: result[0].password,
+            phone: result[0].phone,
+          },
+        });
+      } else res.status(401).send({ err: "Invalid Credentials" });
+    });
+  } else {
+    res.status(204).send({ err: "Enter email or password" });
+  }
+});
+
+app.get("/user", userAuthentication, (req, res) => {
+  res.send(req.decoded);
+});
+
 
 app.listen(PORT, () => {
   console.log(`listening on port ${PORT}`);
