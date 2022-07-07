@@ -162,6 +162,13 @@ app.post("/admin/removeproduct",adminAuthentication,urlencodedParser,(req, res) 
   }}
 );
 
+app.get("/admin/allusers", adminAuthentication, (req, res) => {
+  con.query("SELECT * FROM users", function (err, result, fields) {
+    if (err) throw err;
+    res.send(result);
+  });
+});
+
 app.listen(PORT, () => {
   console.log(`listening on port ${PORT}`);
 }); 
