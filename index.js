@@ -300,6 +300,13 @@ app.get("/user/allproducts", userAuthentication, (req, res) => {
   });
 });
 
+app.get("/user/cart", (req, res) => {});
+app.post("/user/cart/add", (req, res) => {});
+app.post("/user/cart/remove", (req, res) => {});
+app.put("/user/cart/update", (req, res) => {});
+app.post("/user/order", (req, res) => {});
+app.get("/user/allorders", (req, res) => {});
+
 app.get("/user/address", userAuthentication, (req, res) => {
   var sql ="SELECT * FROM useraddresses where user_id='" +req.decoded.data.user_id +"'";
   con.query(sql, function (err, result) {
@@ -381,6 +388,17 @@ app.post("/user/address/remove",userAuthentication,urlencodedParser,(req, res) =
   }
 }
 );
+
+app.put("/user/address/update", (req, res) => {});
+
+app.post("/user/logout", userAuthentication, (req, res) => {
+  var sql =
+    "DELETE FROM usertoken WHERE email='" + req.decoded.data.email + "'";
+  con.query(sql, function (err, results) {
+    if (err) throw err;
+    res.status(200).send({ message: "success"});
+  });
+});
 
 app.listen(PORT, () => {
   console.log(`listening on port ${PORT}`);
