@@ -100,6 +100,33 @@ app.get("/admin/", adminAuthentication, (req, res) => {
   res.send(req.decoded);
 });
 
+app.post("/admin/addproduct", adminAuthentication, jsonParser, (req, res) => {
+  var sql =
+    "INSERT INTO products (name,category,description,price,quantity,unit,stock,options) values('" +
+    req.body.name +
+    "', '" +
+    req.body.category +
+    "', '" +
+    req.body.description +
+    "','" +
+    req.body.price +
+    "','" +
+    req.body.quantity +
+    "','" +
+    req.body.unit +
+    "','" +
+    req.body.stock +
+    "','" +
+    JSON.stringify(req.body.options) +
+    "')";
+  con.query(sql, function (err, result) {
+    if (err) throw err;
+    res.status(200).send({ message: "success" });
+  });
+});
+
 app.listen(PORT, () => {
   console.log(`listening on port ${PORT}`);
-});
+}); 
+
+
