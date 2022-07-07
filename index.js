@@ -162,6 +162,46 @@ app.post("/admin/removeproduct",adminAuthentication,urlencodedParser,(req, res) 
   }}
 );
 
+app.put("/admin/editproduct", adminAuthentication, jsonParser, (req, res) => {
+  var sql =
+    "UPDATE products SET name='" +
+    req.body.name +
+    "',category='" +
+    req.body.category +
+    "',description='" +
+    req.body.description +
+    "',price='" +
+    req.body.price +
+    "',quantity='" +
+    req.body.quantity +
+    "',unit='" +
+    req.body.unit +
+    "',stock='" +
+    req.body.stock +
+    "',options='" +
+    JSON.stringify(req.body.options) +
+    "' WHERE prod_id='" +
+    req.query.prod_id +
+    "'";
+  con.query(sql, function (err, result) {
+    if (err) throw err;
+    res.status(200).send({
+      message: "success",
+      data: {
+        name: req.body.name,
+        category: req.body.category,
+        description: req.body.description,
+        price: req.body.price,
+        quantity: req.body.quantity,
+        unit: req.body.unit,
+        stock: req.body.stock,
+        options: req.body.options,
+      },
+    });
+  });
+});
+
+
 app.get("/admin/allusers", adminAuthentication, (req, res) => {
   con.query("SELECT * FROM users", function (err, result, fields) {
     if (err) throw err;
