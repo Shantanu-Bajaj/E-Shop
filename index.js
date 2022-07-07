@@ -169,6 +169,13 @@ app.get("/admin/allusers", adminAuthentication, (req, res) => {
   });
 });
 
+app.get("/admin/allproducts", adminAuthentication, (req, res) => {
+  con.query("SELECT * FROM products", function (err, result, fields) {
+    if (err) throw err;
+    res.send(result);
+  });
+});
+
 app.listen(PORT, () => {
   console.log(`listening on port ${PORT}`);
 }); 
