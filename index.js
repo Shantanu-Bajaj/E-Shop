@@ -348,6 +348,40 @@ app.post("/user/address/add",userAuthentication,urlencodedParser,(req, res) => {
   }
 });
 
+app.post("/user/address/remove",userAuthentication,urlencodedParser,(req, res) => {
+  let add_data =[];
+  if (!req.body.id) res.status(400).send({ err: "enter address id" });
+  else {
+    var sql1 = "SELECT id FROM useraddresses where user_id='"+req.decoded.data.user_id +"' and id='" + req.body.id + "'";
+    con.query(sql1, function(err, result){
+      if (err) throw err;
+      if (!result.length)
+      res.status(404).send({err: "Not found"});
+      else{
+        var sql2 = "SELECT * FROM useraddresses where id ='" +req.body.id +"' and user_id='"+req.decoded.data.user_id + "'";
+        con.query(sql2, function(err, resultss){
+          if (err) throw err;
+          add_data = resultss;
+        })
+        var sql ="DELETE FROM useraddresses where id ='" +req.body.id +"' and user_id='"+req.decoded.data.user_id + "'";
+        con.query(sql, function (err, results) {
+          if (err) throw err;
+          res.status(200).send({message: "success",data:{
+            id: add_data[0].id,
+            user_id: add_data[0].user_id,
+            street:add_data[0].street,
+            city:add_data[0].city,
+            pincode:add_data[0].pincode,
+            state:add_data[0].state,
+            country:add_data[0].country
+          }})
+        });
+      }
+    })       
+  }
+}
+);
+
 app.listen(PORT, () => {
   console.log(`listening on port ${PORT}`);
 }); 
