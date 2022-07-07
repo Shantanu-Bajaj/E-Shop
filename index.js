@@ -293,6 +293,14 @@ app.get("/user", userAuthentication, (req, res) => {
   res.send(req.decoded);
 });
 
+app.get("/user/allproducts", userAuthentication, (req, res) => {
+  con.query("SELECT * FROM products", function (err, result, fields) {
+    if (err) throw err;
+    res.send(result);
+  });
+});
+
+
 
 app.listen(PORT, () => {
   console.log(`listening on port ${PORT}`);
