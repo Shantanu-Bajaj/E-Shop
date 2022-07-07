@@ -216,6 +216,15 @@ app.get("/admin/allproducts", adminAuthentication, (req, res) => {
   });
 });
 
+app.post("/admin/logout", adminAuthentication, (req, res) => {
+  var sql =
+    "DELETE FROM admintoken WHERE email='" + req.decoded.data.email + "'";
+  con.query(sql, function (err, results) {
+    if (err) throw err;
+    res.status(200).send({message:"success"});
+  });
+});
+
 app.listen(PORT, () => {
   console.log(`listening on port ${PORT}`);
 }); 
