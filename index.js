@@ -40,8 +40,6 @@ const adminAuthentication = function (req, res, next) {
         if (err) res.status(401).send({ error: "Unauthorized" });
         req.decoded = decoded;
       });
-    // console.log(req.decoded.data.name);
-    // console.log(req.decoded);
     else res.status(401).send({ error: "Please Login First" });
     next();
   });
@@ -63,10 +61,45 @@ const userAuthentication = function (req, res, next) {
         if (err) res.status(401).send({ error: "Unauthorized" });
         req.decoded = decoded;
       });
-    // console.log(req.decoded.data.name);
-    // console.log(req.decoded);
     else res.status(401).send({ error: "Please Login First" });
     next();
   });
 };
 
+
+//ADMIN ROUTES
+app.get("/admin/login", urlencodedParser, (req, res) => {
+  if (req.body.email && req.body.password) {
+    var sql ="SELECT * FROM admins WHERE email = '" +req.body.email +"' AND password = '" +req.body.password +"'";
+    con.query(sql, function (err, result) {
+      if (err) throw err;
+      if (result.length) {
+        let adminToken = jwt.sign({ data: result[0] },process.env.ADMIN_SECRET_KEY,{ expiresIn: 604800 });
+        var sql1 ="INSERT INTO admintoken (email, token) values ('" +req.body.email +"', '" +adminToken +"')";
+        con.query(sql1, function (err, result) {
+          if (err) throw err;
+        });
+        res.send({message: "success",
+          token: adminToken,
+          data: {
+            adminid: result[0].admin_id,
+            name: result[0].name,
+            email: result[0].email,
+            password: result[0].password,
+            phone: result[0].phone,
+          },
+        });
+      } else res.status(401).send({ err: "Invalid Credentials" });
+    });
+  } else {
+    res.status(204).send({ err: "Enter email or password" });
+  }
+});
+
+app.get("/admin/", adminAuthentication, (req, res) => {
+  res.send(req.decoded);
+});
+
+app.listen(PORT, () => {
+  console.log(`listening on port ${PORT}`);
+});
