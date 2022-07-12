@@ -66,20 +66,34 @@ const userAuthentication = function (req, res, next) {
   });
 };
 
-
 //ADMIN ROUTES
 app.get("/admin/login", urlencodedParser, (req, res) => {
   if (req.body.email && req.body.password) {
-    var sql ="SELECT * FROM admins WHERE email = '" +req.body.email +"' AND password = '" +req.body.password +"'";
+    var sql =
+      "SELECT * FROM admins WHERE email = '" +
+      req.body.email +
+      "' AND password = '" +
+      req.body.password +
+      "'";
     con.query(sql, function (err, result) {
       if (err) throw err;
       if (result.length) {
-        let adminToken = jwt.sign({ data: result[0] },process.env.ADMIN_SECRET_KEY,{ expiresIn: 604800 });
-        var sql1 ="INSERT INTO admintoken (email, token) values ('" +req.body.email +"', '" +adminToken +"')";
+        let adminToken = jwt.sign(
+          { data: result[0] },
+          process.env.ADMIN_SECRET_KEY,
+          { expiresIn: 604800 }
+        );
+        var sql1 =
+          "INSERT INTO admintoken (email, token) values ('" +
+          req.body.email +
+          "', '" +
+          adminToken +
+          "')";
         con.query(sql1, function (err, result) {
           if (err) throw err;
         });
-        res.send({message: "success",
+        res.send({
+          message: "success",
           token: adminToken,
           data: {
             adminid: result[0].admin_id,
@@ -125,82 +139,67 @@ app.post("/admin/addproduct", adminAuthentication, jsonParser, (req, res) => {
   });
 });
 
-app.post("/admin/removeproduct",adminAuthentication,urlencodedParser,(req, res) => {
-  let data = [];
-  if (!req.body.prod_id) res.status(400).send({ err: "enter product id" });
-  else {
-    var sqll ="SELECT prod_id FROM products WHERE prod_id='" + req.body.prod_id + "'";
-    con.query(sqll, function (err, result) {
-      if (err) throw err;
-      if (!result.length) res.status(404).send({ err: "Not found" });
-      else {
-        var SQL ="SELECT * FROM products where prod_id='" + req.body.prod_id + "'";
-        con.query(SQL, function (err, results) {
-          if (err) throw err;
-          data = results;
-        });
-        var sql ="DELETE FROM products where prod_id='" + req.body.prod_id + "'";
-        con.query(sql, function (err, results) {
-          if (err) throw err;
-          res.status(200).send({
-            message: "success",
-            data: {
-              prod_id: data[0].prod_id,
-              name: data[0].name,
-              category: data[0].category,
-              description: data[0].description,
-              price: data[0].price,
-              quantity: data[0].quantity,
-              unit: data[0].unit,
-              stock: data[0].stock,
-              options: data[0].options,
-            },
+app.post(
+  "/admin/removeproduct",
+  adminAuthentication,
+  urlencodedParser,
+  (req, res) => {
+    let data = [];
+    if (!req.body.prod_id) res.status(400).send({ err: "enter product id" });
+    else {
+      var sqll =
+        "SELECT prod_id FROM products WHERE prod_id='" + req.body.prod_id + "'";
+      con.query(sqll, function (err, result) {
+        if (err) throw err;
+        if (!result.length) res.status(404).send({ err: "Not found" });
+        else {
+          var SQL =
+            "SELECT * FROM products where prod_id='" + req.body.prod_id + "'";
+          con.query(SQL, function (err, results) {
+            if (err) throw err;
+            data = results;
           });
-        });
-      }
-    });
-  }}
+          var sql =
+            "DELETE FROM products where prod_id='" + req.body.prod_id + "'";
+          con.query(sql, function (err, results) {
+            if (err) throw err;
+            res.status(200).send({
+              message: "success",
+              data: {
+                prod_id: data[0].prod_id,
+                name: data[0].name,
+                category: data[0].category,
+                description: data[0].description,
+                price: data[0].price,
+                quantity: data[0].quantity,
+                unit: data[0].unit,
+                stock: data[0].stock,
+                options: data[0].options,
+              },
+            });
+          });
+        }
+      });
+    }
+  }
 );
 
 app.put("/admin/editproduct", adminAuthentication, jsonParser, (req, res) => {
-  var sql =
-    "UPDATE products SET name='" +
-    req.body.name +
-    "',category='" +
-    req.body.category +
-    "',description='" +
-    req.body.description +
-    "',price='" +
-    req.body.price +
-    "',quantity='" +
-    req.body.quantity +
-    "',unit='" +
-    req.body.unit +
-    "',stock='" +
-    req.body.stock +
-    "',options='" +
-    JSON.stringify(req.body.options) +
-    "' WHERE prod_id='" +
-    req.query.prod_id +
-    "'";
-  con.query(sql, function (err, result) {
-    if (err) throw err;
-    res.status(200).send({
-      message: "success",
-      data: {
-        name: req.body.name,
-        category: req.body.category,
-        description: req.body.description,
-        price: req.body.price,
-        quantity: req.body.quantity,
-        unit: req.body.unit,
-        stock: req.body.stock,
-        options: req.body.options,
-      },
+  for (let i = 0; i < Object.keys(req.body).length; i++) {
+    var sql =
+      "UPDATE products SET " +
+      Object.keys(req.body)[i] +
+      "='" +
+      Object.values(req.body)[i] +
+      "' WHERE prod_id='" +
+      req.query.prod_id +
+      "'";
+    con.query(sql, function (err, result) {
+      if (err) throw err;
+      res.status(200).send({ message: "success" });
     });
-  });
+  }
 });
-
 
 app.get("/admin/allusers", adminAuthentication, (req, res) => {
   con.query("SELECT * FROM users", function (err, result, fields) {
@@ -221,10 +220,9 @@ app.post("/admin/logout", adminAuthentication, (req, res) => {
     "DELETE FROM admintoken WHERE email='" + req.decoded.data.email + "'";
   con.query(sql, function (err, results) {
     if (err) throw err;
-    res.status(200).send({message:"success"});
+    res.status(200).send({ message: "success" });
   });
 });
-
 
 //USER ROUTES
 app.post("/user/register", urlencodedParser, (req, res) => {
@@ -233,9 +231,12 @@ app.post("/user/register", urlencodedParser, (req, res) => {
     if (err) throw err;
     if (!result.length) {
       if (req.body.password.length < 6) {
-        res.status(401).send({ err: "Password length should be at least 6 characters" });
+        res
+          .status(401)
+          .send({ err: "Password length should be at least 6 characters" });
       } else {
-        var sql ="INSERT INTO users (name, email, password, phone) VALUES ('" +
+        var sql =
+          "INSERT INTO users (name, email, password, phone) VALUES ('" +
           req.body.name +
           "','" +
           req.body.email +
@@ -246,7 +247,8 @@ app.post("/user/register", urlencodedParser, (req, res) => {
           "')";
         con.query(sql, function (err, results) {
           if (err) throw err;
-          res.status(200).send({message: "success",
+          res.status(200).send({
+            message: "success",
             data: {
               name: req.body.name,
               email: req.body.email,
@@ -264,16 +266,32 @@ app.post("/user/register", urlencodedParser, (req, res) => {
 
 app.get("/user/login", urlencodedParser, (req, res) => {
   if (req.body.email && req.body.password) {
-    var sql ="SELECT * FROM users WHERE email = '" +req.body.email +"' AND password = '" +req.body.password +"'";
+    var sql =
+      "SELECT * FROM users WHERE email = '" +
+      req.body.email +
+      "' AND password = '" +
+      req.body.password +
+      "'";
     con.query(sql, function (err, result) {
       if (err) throw err;
       if (result.length) {
-        let userToken = jwt.sign({ data: result[0] },process.env.USER_SECRET_KEY,{ expiresIn: 604800 });
-        var sql1 ="INSERT INTO usertoken (email, token) values ('" +req.body.email +"', '" +userToken +"')";
+        let userToken = jwt.sign(
+          { data: result[0] },
+          process.env.USER_SECRET_KEY,
+          { expiresIn: 604800 }
+        );
+        var sql1 =
+          "INSERT INTO usertoken (email, token) values ('" +
+          req.body.email +
+          "', '" +
+          userToken +
+          "')";
         con.query(sql1, function (err, result) {
           if (err) throw err;
         });
-        res.send({message: "success",token: userToken,
+        res.send({
+          message: "success",
+          token: userToken,
           data: {
             userid: result[0].userid,
             name: result[0].name,
@@ -308,100 +326,128 @@ app.post("/user/order", (req, res) => {});
 app.get("/user/allorders", (req, res) => {});
 
 app.get("/user/address", userAuthentication, (req, res) => {
-  var sql ="SELECT * FROM useraddresses where user_id='" +req.decoded.data.user_id +"'";
+  var sql =
+    "SELECT * FROM useraddresses where user_id='" +
+    req.decoded.data.user_id +
+    "'";
   con.query(sql, function (err, result) {
     if (err) throw err;
-    if(!result.length) res.status(404).send({ err: "not found" });
-    else{
-      res.status(200).send({message: "success",data: result});
-      }
+    if (!result.length) res.status(404).send({ err: "not found" });
+    else {
+      res.status(200).send({ message: "success", data: result });
+    }
   });
 });
 
-app.post("/user/address/add",userAuthentication,urlencodedParser,(req, res) => {
-  if (!req.body.street) res.status(400).send({ err: "enter street" });
-  else if(!req.body.city) res.status(400).send({ err:"enter city"});
-  else if(!req.body.pincode) res.status(400).send({ err:"enter pincode"});
-  else if(!req.body.state) res.status(400).send({ err:"enter state"});
-  else if(!req.body.country) res.status(400).send({ err:"enter country"});
-  else{
-    var sql ="INSERT INTO useraddresses(user_id, street, city, pincode, state, country) values ('" +
-      req.decoded.data.user_id +
-      "','" +
-      req.body.street +
-      "','" +
-      req.body.city +
-      "','" +
-      req.body.pincode +
-      "','" +
-      req.body.state +
-      "','" +
-      req.body.country +
-      "')";
-    con.query(sql, function (err, result) {
-      if (err) throw err;
-      res.status(200).send({
-        message: "success",
-        data: {
-          userid: req.decoded.data.user_id,
-          street: req.body.street,
-          city: req.body.city,
-          pincode: req.body.pimcode,
-          state: req.body.state,
-          country: req.body.country,
-        },
-      });
-    });
-  }
-});
-
-app.post("/user/address/remove",userAuthentication,urlencodedParser,(req, res) => {
-  let add_data =[];
-  if (!req.body.id) res.status(400).send({ err: "enter address id" });
-  else {
-    var sql1 = "SELECT id FROM useraddresses where user_id='"+req.decoded.data.user_id +"' and id='" + req.body.id + "'";
-    con.query(sql1, function(err, result){
-      if (err) throw err;
-      if (!result.length)
-      res.status(404).send({err: "Not found"});
-      else{
-        var sql2 = "SELECT * FROM useraddresses where id ='" +req.body.id +"' and user_id='"+req.decoded.data.user_id + "'";
-        con.query(sql2, function(err, resultss){
-          if (err) throw err;
-          add_data = resultss;
-        })
-        var sql ="DELETE FROM useraddresses where id ='" +req.body.id +"' and user_id='"+req.decoded.data.user_id + "'";
-        con.query(sql, function (err, results) {
-          if (err) throw err;
-          res.status(200).send({message: "success",data:{
-            id: add_data[0].id,
-            user_id: add_data[0].user_id,
-            street:add_data[0].street,
-            city:add_data[0].city,
-            pincode:add_data[0].pincode,
-            state:add_data[0].state,
-            country:add_data[0].country
-          }})
+app.post(
+  "/user/address/add",
+  userAuthentication,
+  urlencodedParser,
+  (req, res) => {
+    if (!req.body.street) res.status(400).send({ err: "enter street" });
+    else if (!req.body.city) res.status(400).send({ err: "enter city" });
+    else if (!req.body.pincode) res.status(400).send({ err: "enter pincode" });
+    else if (!req.body.state) res.status(400).send({ err: "enter state" });
+    else if (!req.body.country) res.status(400).send({ err: "enter country" });
+    else {
+      var sql =
+        "INSERT INTO useraddresses(user_id, street, city, pincode, state, country) values ('" +
+        req.decoded.data.user_id +
+        "','" +
+        req.body.street +
+        "','" +
+        req.body.city +
+        "','" +
+        req.body.pincode +
+        "','" +
+        req.body.state +
+        "','" +
+        req.body.country +
+        "')";
+      con.query(sql, function (err, result) {
+        if (err) throw err;
+        res.status(200).send({
+          message: "success",
+          data: {
+            userid: req.decoded.data.user_id,
+            street: req.body.street,
+            city: req.body.city,
+            pincode: req.body.pimcode,
+            state: req.body.state,
+            country: req.body.country,
+          },
         });
-      }
-    })       
+      });
+    }
   }
-}
 );
 
-app.put("/user/address/update", (req, res) => {});
+app.post(
+  "/user/address/remove",
+  userAuthentication,
+  urlencodedParser,
+  (req, res) => {
+    let add_data = [];
+    if (!req.body.id) res.status(400).send({ err: "enter address id" });
+    else {
+      var sql1 =
+        "SELECT id FROM useraddresses where user_id='" +
+        req.decoded.data.user_id +
+        "' and id='" +
+        req.body.id +
+        "'";
+      con.query(sql1, function (err, result) {
+        if (err) throw err;
+        if (!result.length) res.status(404).send({ err: "Not found" });
+        else {
+          var sql2 =
+            "SELECT * FROM useraddresses where id ='" +
+            req.body.id +
+            "' and user_id='" +
+            req.decoded.data.user_id +
+            "'";
+          con.query(sql2, function (err, resultss) {
+            if (err) throw err;
+            add_data = resultss;
+          });
+          var sql =
+            "DELETE FROM useraddresses where id ='" +
+            req.body.id +
+            "' and user_id='" +
+            req.decoded.data.user_id +
+            "'";
+          con.query(sql, function (err, results) {
+            if (err) throw err;
+            res.status(200).send({
+              message: "success",
+              data: {
+                id: add_data[0].id,
+                user_id: add_data[0].user_id,
+                street: add_data[0].street,
+                city: add_data[0].city,
+                pincode: add_data[0].pincode,
+                state: add_data[0].state,
+                country: add_data[0].country,
+              },
+            });
+          });
+        }
+      });
+    }
+  }
+);
+
+
 
 app.post("/user/logout", userAuthentication, (req, res) => {
   var sql =
     "DELETE FROM usertoken WHERE email='" + req.decoded.data.email + "'";
   con.query(sql, function (err, results) {
     if (err) throw err;
-    res.status(200).send({ message: "success"});
+    res.status(200).send({ message: "success" });
   });
 });
 
 app.listen(PORT, () => {
   console.log(`listening on port ${PORT}`);
-}); 
-
-
+});
