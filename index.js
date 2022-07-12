@@ -437,7 +437,22 @@ app.post(
   }
 );
 
-
+app.put("/user/address/update", userAuthentication,urlencodedParser,(req, res) => {
+  for (let i = 0; i < Object.keys(req.body).length; i++) {
+    var sql =
+      "UPDATE useraddresses SET " +
+      Object.keys(req.body)[i] +
+      "='" +
+      Object.values(req.body)[i] +
+      "' WHERE id='" +
+      req.query.id +
+      "'";
+    con.query(sql, function (err, result) {
+      if (err) throw err;
+      res.status(200).send({ message: "success" });
+    });
+  }
+});
 
 app.post("/user/logout", userAuthentication, (req, res) => {
   var sql =
