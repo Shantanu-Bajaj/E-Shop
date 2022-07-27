@@ -508,6 +508,64 @@ app.post(
 );
 
 
+app.put(
+  "/user/cart/update",
+  userAuthentication,
+  jsonParser,
+  urlencodedParser,
+  (req, res) => {
+    if (req.query.id) {
+      var sql =
+        "SELECT * FROM cart WHERE id = '" + req.query.id + "'";
+      con.query(sql, function (err, result) {
+        if (err) throw err;
+        if (!result.length) res.status(404).send({ err: "not found" });
+        else {
+          if (!req.body.options) {
+            for (let i = 0; i < Object.keys(req.body).length; i++) {
+              var sql =
+                "UPDATE cart SET " +
+                Object.keys(req.body)[i] +
+                "='" +
+                Object.values(req.body)[i] +
+                "' WHERE id='" +
+                req.query.id +
+                "'";
+              con.query(sql, function (err, result) {
+                if (err) throw err;
+                res.status(200).send({ message: "success" });
+              });
+            }
+          } else {
+            var cartsql =
+              "SELECT * FROM cart WHERE id='" +
+              req.query.id +
+              "'";
+            con.query(cartsql, function (err, cartresult) {
+              if (err) throw err;
+              var cartOptions = JSON.parse(cartresult[0].options);
+              cartOptions = req.body.options;
+              var sql =
+                "UPDATE cart SET options='" +
+                JSON.stringify(cartOptions) +
+                "' WHERE id='" +
+                req.query.id +
+                "'";
+              con.query(sql, function (err, result) {
+                if (err) throw err;
+                res.status(200).send({ message: "success" });
+              });
+            });
+          }
+        }
+      });
+    } else {
+      res.status(400).send({ err: "Enter cart id" });
+    }
+  }
+);
+
+
 app.get("/user/address", userAuthentication, (req, res) => {
   var sql =
     "SELECT * FROM useraddresses where user_id='" +
