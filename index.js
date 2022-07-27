@@ -742,7 +742,18 @@ app.post(
   }
 );
 
-
+app.get("/user/allorders", userAuthentication, (req, res) => {
+  var sql =
+    "SELECT * FROM orders WHERE user_id ='" + req.decoded.data.user_id + "'";
+  con.query(sql, function (err, result) {
+    if (err) throw err;
+    console.log(result);
+    if (!result.length) res.status(404).send({ err: "not found" });
+    else {
+      res.status(200).send({ message: "success", data: result });
+    }
+  });
+});
 
 app.get("/user/address", userAuthentication, (req, res) => {
   var sql =
