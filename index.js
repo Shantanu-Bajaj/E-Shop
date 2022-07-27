@@ -451,6 +451,63 @@ app.post(
 );
 
 
+app.post(
+  "/user/cart/remove",
+  userAuthentication,
+  urlencodedParser,
+  jsonParser,
+  (req, res) => {
+    let cart_data = [];
+    if (!req.body.id) res.status(400).send({ err: "enter cart id" });
+    else {
+      var sql1 =
+        "SELECT id FROM cart where user_id='" +
+        req.decoded.data.user_id +
+        "' and id='" +
+        req.body.id +
+        "'";
+      con.query(sql1, function (err, result) {
+        if (err) throw err;
+        if (!result.length) res.status(404).send({ err: "Not found" });
+        else {
+          var sql2 =
+            "SELECT * FROM cart where id ='" +
+            req.body.id +
+            "' and user_id='" +
+            req.decoded.data.user_id +
+            "'";
+          con.query(sql2, function (err, resultss) {
+            if (err) throw err;
+            cart_data = resultss;
+          });
+
+          var sql =
+            "DELETE FROM cart where id ='" +
+            req.body.id +
+            "' and user_id='" +
+            req.decoded.data.user_id +
+            "'";
+          con.query(sql, function (err, results) {
+            if (err) throw err;
+            res.status(200).send({
+              message: "success",
+              data: {
+                id: cart_data[0].id,
+                user_id: cart_data[0].user_id,
+                prod_id: cart_data[0].prod_id,
+                prod_quantity: cart_data[0].prod_quantity,
+                prod_price: cart_data[0].prod_price,
+                options: cart_data[0].options,
+              },
+            });
+          });
+        }
+      });
+    }
+  }
+);
+
+
 app.get("/user/address", userAuthentication, (req, res) => {
   var sql =
     "SELECT * FROM useraddresses where user_id='" +
