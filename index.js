@@ -566,6 +566,184 @@ app.put(
 );
 
 
+app.post(
+  "/user/order",
+  userAuthentication,
+  jsonParser,
+  urlencodedParser,
+  (req, res) => {
+    var addsql =
+      "SELECT * FROM useraddresses WHERE user_id = '" +
+      req.decoded.data.user_id +
+      "'";
+    con.query(addsql, function (err, addresult) {
+      if (err) throw err;
+      var ordersql =
+        "INSERT INTO orders (user_id, address_id) VALUES ('" +
+        req.decoded.data.user_id +
+        "', '" +
+        addresult[0].id +
+        "')";
+      con.query(ordersql, function (err, orderresult) {
+        if (err) throw err;
+        var oritemsql =
+          "SELECT id FROM orders WHERE user_id = '" +
+          req.decoded.data.user_id +
+          "'";
+        con.query(oritemsql, function (err, orderid) {
+          if (err) throw err;
+          var sql =
+            "SELECT * FROM cart WHERE user_id ='" +
+            req.decoded.data.user_id +
+            "'";
+          con.query(sql, function (err, cartresult) {
+            if (err) throw err;
+            // console.log(cartresult)
+            if (!cartresult.length)
+              res.status(400).send({ err: "Cart is Empty" });
+            else {
+              // something(cartresult).then(newSomething);
+              for (let i = 0; i < cartresult.length; i++) {
+                var sql1 =
+                  "SELECT * FROM products WHERE prod_id='" +
+                  cartresult[i].prod_id +
+                  "'";
+                con.query(sql1, function (err, prodresult) {
+                  if (err) throw err;
+                  // console.log(prodresult);
+                  if (!prodresult.length) {
+                    // console.log("HELLO");
+                    res.status(404).send({ err: "currently unavailable" });
+                  } else {
+                    if (cartresult[i].options) {
+                      var prodOptions = JSON.parse(prodresult[0].options);
+                      var cartOptions = JSON.parse(cartresult[i].options);
+                      if (prodOptions.hasOwnProperty(cartOptions.prod_color)) {
+                        if (
+                          prodOptions[cartOptions.prod_color].hasOwnProperty(
+                            cartOptions.prod_size
+                          )
+                        ) {
+                          if (
+                            prodOptions[cartOptions.prod_color][
+                              cartOptions.prod_size
+                            ]["quantity"] >= cartOptions.prod_quantity
+                          ) {
+                            var amount =
+                              cartOptions.prod_quantity *
+                              cartresult[i].prod_price;
+                            var SQL =
+                              "INSERT INTO orderitems(order_id, prod_name, prod_quantity, prod_price, options, total) VALUES('" +
+                              orderid[orderid.length - 1].id +
+                              "','" +
+                              prodresult[0].name +
+                              "','" +
+                              cartOptions.prod_quantity +
+                              "','" +
+                              cartresult[i].prod_price +
+                              "','" +
+                              JSON.stringify(cartOptions) +
+                              "','" +
+                              amount +
+                              "')";
+                            con.query(SQL, function (err, result) {
+                              if (err) throw err;
+                              var newQuantity =
+                                prodOptions[cartOptions.prod_color][
+                                  cartOptions.prod_size
+                                ]["quantity"] - cartOptions.prod_quantity;
+                              prodOptions[cartOptions.prod_color][
+                                cartOptions.prod_size
+                              ]["quantity"] = newQuantity;
+                              // console.log(prodOptions)
+                              var prodsql =
+                                "UPDATE products SET options='" +
+                                JSON.stringify(prodOptions) +
+                                "' WHERE prod_id='" +
+                                cartresult[i].prod_id +
+                                "'";
+                              con.query(prodsql, function (err, result) {
+                                if (err) throw err;
+                              });
+
+                              var cartsql =
+                                "DELETE FROM cart WHERE id='" +
+                                cartresult[i].id +
+                                "'";
+                              con.query(cartsql, function (err, result) {
+                                if (err) throw err;
+                              });
+                            });
+                          } else {
+                            res.status(400).send({ err: "Quantity Exceeded" });
+                          }
+                        } else {
+                          res
+                            .status(404)
+                            .send({ err: "currently unavailable" });
+                        }
+                      } else {
+                        res.status(404).send({ err: "currently unavailable" });
+                      }
+                    } else {
+                      if (cartresult[i].prod_quantity <= prodresult[0].stock) {
+                        var amount =
+                          cartresult[i].prod_quantity *
+                          cartresult[i].prod_price;
+                        var SQL =
+                          "INSERT INTO orderitems(order_id, prod_name, prod_quantity, prod_price, total) VALUES('" +
+                          orderid[orderid.length - 1].id +
+                          "','" +
+                          prodresult[0].name +
+                          "','" +
+                          cartresult[i].prod_quantity +
+                          "','" +
+                          cartresult[i].prod_price +
+                          "','" +
+                          amount +
+                          "')";
+                        con.query(SQL, function (err, result) {
+                          if (err) throw err;
+                          var newQuantity =
+                            prodresult[0].stock - cartresult[i].prod_quantity;
+                          prodresult[0].stock = newQuantity;
+                          // console.log(prodOptions)
+                          var prodsql =
+                            "UPDATE products SET stock='" +
+                            prodresult[0].stock +
+                            "' WHERE prod_id='" +
+                            cartresult[i].prod_id +
+                            "'";
+                          con.query(prodsql, function (err, result) {
+                            if (err) throw err;
+                          });
+
+                          var cartsql =
+                            "DELETE FROM cart WHERE id='" +
+                            cartresult[i].id +
+                            "'";
+                          con.query(cartsql, function (err, result) {
+                            if (err) throw err;
+                          });
+                        });
+                      } else {
+                        res.status(400).send({ err: "Quantity Exceeded" });
+                      }
+                    }
+                  }
+                });
+              }
+            }
+          });
+        });
+      });
+    });
+    res.status(200).send({ message: "Order placed" });
+  }
+);
+
+
+
 app.get("/user/address", userAuthentication, (req, res) => {
   var sql =
     "SELECT * FROM useraddresses where user_id='" +
