@@ -368,6 +368,87 @@ app.get("/user/cart", userAuthentication, urlencodedParser, (req, res) => {
   });
 }); 
 
+app.post(
+  "/user/cart/add",
+  userAuthentication,
+  urlencodedParser,
+  jsonParser,
+  (req, res) => {
+    if (!req.body.options) {
+      if (req.body.prod_id) {
+        var query =
+          "SELECT * FROM products WHERE prod_id='" + req.body.prod_id + "'";
+        con.query(query, function (err, result) {
+          if (err) throw err;
+          if (req.body.prod_quantity > result[0].stock)
+            res.status(400).send({ err: "quantity exceeded" });
+          var sql =
+            "INSERT INTO cart (user_id, prod_id, prod_quantity, prod_price) VALUES ('" +
+            req.decoded.data.user_id +
+            "','" +
+            req.body.prod_id +
+            "','" +
+            req.body.prod_quantity +
+            "','" +
+            result[0].price +
+            "')";
+          con.query(sql, function (err, results) {
+            if (err) throw err;
+          });
+          res.status(200).send({ message: "success" });
+        });
+      } else {
+        res.status(200).send({ err: "enter product id" });
+      }
+    } else {
+      if (req.body.prod_id) {
+        var query =
+          "SELECT * FROM products WHERE prod_id='" + req.body.prod_id + "'";
+        con.query(query, function (err, result) {
+          if (err) throw err;
+          // console.log(result)
+          var options = JSON.parse(result[0].options);
+          if (options.hasOwnProperty(req.body.options.prod_color)) {
+            if (
+              options[req.body.options.prod_color].hasOwnProperty(
+                req.body.options.prod_size
+              )
+            ) {
+              if (
+                options[req.body.options.prod_color][
+                  req.body.options.prod_size
+                ]["quantity"] >= req.body.options.prod_quantity
+              ) {
+                var sql =
+                  "INSERT INTO cart (user_id,prod_id, prod_price, options) VALUES ('" +
+                  req.decoded.data.user_id +
+                  "','" +
+                  req.body.prod_id +
+                  "','" +
+                  result[0].price +
+                  "','" +
+                  JSON.stringify(req.body.options) +
+                  "')";
+                con.query(sql, function (err, results) {
+                  if (err) throw err;
+                  res.status(200).send({ message: "success" });
+                });
+              } else {
+                res.status(400).send({ err: "Quantity Exceeded" });
+              }
+            } else {
+              res.status(404).send({ err: "not found" });
+            }
+          } else {
+            res.status(404).send({ err: "not found" });
+          }
+        });
+      } else {
+        res.status(200).send({ err: "enter product id" });
+      }
+    }
+  }
+);
 
 
 app.get("/user/address", userAuthentication, (req, res) => {
