@@ -355,6 +355,21 @@ app.get("/user/allproducts", userAuthentication, (req, res) => {
   });
 });
 
+app.get("/user/cart", userAuthentication, urlencodedParser, (req, res) => {
+  var sql = "SELECT * FORM cart WHERE user_id='" +
+    req.decoded.data.user_id +
+    "'";
+  con.query(sql, function (err, result) {
+    if (err) throw err;
+    if(!result.length) res.status(404).send({ err: "Cart is empty" });
+    else{
+      res.status(200).send(result);
+    }
+  });
+}); 
+
+
+
 app.get("/user/address", userAuthentication, (req, res) => {
   var sql =
     "SELECT * FROM useraddresses where user_id='" +
