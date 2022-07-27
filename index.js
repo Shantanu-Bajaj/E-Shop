@@ -4,12 +4,16 @@ import express from "express";
 import jwt from "jsonwebtoken";
 import fetch from "node-fetch";
 import bodyParser from "body-parser";
+import util from "util";
+import cors from "cors";
 
 dotenv.config();
 const PORT = 8080;
 const app = express();
-var urlencodedParser = bodyParser.urlencoded({ extended: false });
+var urlencodedParser = bodyParser.urlencoded({ extended: true });
 var jsonParser = bodyParser.json();
+
+app.use(cors());
 
 var con = mysql.createConnection({
   host: process.env.host,
@@ -24,6 +28,7 @@ con.connect(function (err) {
   console.log("Connected");
 });
 
+const query_new = util.promisify(con.query).bind(con);
 //ADMIN AUTHENTICATION MIDDLEWARE
 const adminAuthentication = function (req, res, next) {
   if (!req.headers.hasOwnProperty("authorization")) {
@@ -106,7 +111,7 @@ app.get("/admin/login", urlencodedParser, (req, res) => {
       } else res.status(401).send({ err: "Invalid Credentials" });
     });
   } else {
-    res.status(204).send({ err: "Enter email or password" });
+    res.status(400).send({ err: "Enter email or password" });
   }
 });
 
@@ -185,19 +190,51 @@ app.post(
 );
 
 app.put("/admin/editproduct", adminAuthentication, jsonParser, (req, res) => {
-  for (let i = 0; i < Object.keys(req.body).length; i++) {
+  if (req.query.prod_id) {
     var sql =
-      "UPDATE products SET " +
-      Object.keys(req.body)[i] +
-      "='" +
-      Object.values(req.body)[i] +
-      "' WHERE prod_id='" +
-      req.query.prod_id +
-      "'";
+      "SELECT * FROM products WHERE prod_id = '" + req.query.prod_id + "'";
     con.query(sql, function (err, result) {
       if (err) throw err;
-      res.status(200).send({ message: "success" });
+      if (!result.length) res.status(404).send({ err: "not found" });
+      else {
+        if (!req.body.options) {
+          for (let i = 0; i < Object.keys(req.body).length; i++) {
+            var sql =
+              "UPDATE products SET " +
+              Object.keys(req.body)[i] +
+              "='" +
+              Object.values(req.body)[i] +
+              "' WHERE prod_id='" +
+              req.query.prod_id +
+              "'";
+            con.query(sql, function (err, result) {
+              if (err) throw err;
+              res.status(200).send({ message: "success" });
+            });
+          }
+        } else {
+          var prodsql =
+            "SELECT * FROM products WHERE prod_id='" + req.query.prod_id + "'";
+          con.query(prodsql, function (err, prodresult) {
+            if (err) throw err;
+            var prodOptions = JSON.parse(prodresult[0].options);
+            prodOptions = req.body.options;
+            var sql =
+              "UPDATE products SET options='" +
+              JSON.stringify(prodOptions) +
+              "' WHERE prod_id='" +
+              req.query.prod_id +
+              "'";
+            con.query(sql, function (err, result) {
+              if (err) throw err;
+              res.status(200).send({ message: "success" });
+            });
+          });
+        }
+      }
     });
+  } else {
+    res.status(400).send({ err: "Enter product id" });
   }
 });
 
@@ -318,18 +355,14 @@ app.get("/user/allproducts", userAuthentication, (req, res) => {
   });
 });
 
-app.get("/user/cart", (req, res) => {});
-app.post("/user/cart/add", (req, res) => {});
-app.post("/user/cart/remove", (req, res) => {});
-app.put("/user/cart/update", (req, res) => {});
-app.post("/user/order", (req, res) => {});
-app.get("/user/allorders", (req, res) => {});
-
 app.get("/user/address", userAuthentication, (req, res) => {
   var sql =
     "SELECT * FROM useraddresses where user_id='" +
     req.decoded.data.user_id +
     "'";
+
+  // let result = await query_new(sql);
+  // console.log(result);
   con.query(sql, function (err, result) {
     if (err) throw err;
     if (!result.length) res.status(404).send({ err: "not found" });
@@ -437,22 +470,27 @@ app.post(
   }
 );
 
-app.put("/user/address/update", userAuthentication,urlencodedParser,(req, res) => {
-  for (let i = 0; i < Object.keys(req.body).length; i++) {
-    var sql =
-      "UPDATE useraddresses SET " +
-      Object.keys(req.body)[i] +
-      "='" +
-      Object.values(req.body)[i] +
-      "' WHERE id='" +
-      req.query.id +
-      "'";
-    con.query(sql, function (err, result) {
-      if (err) throw err;
-      res.status(200).send({ message: "success" });
-    });
+app.put(
+  "/user/address/update",
+  userAuthentication,
+  urlencodedParser,
+  (req, res) => {
+    for (let i = 0; i < Object.keys(req.body).length; i++) {
+      var sql =
+        "UPDATE useraddresses SET " +
+        Object.keys(req.body)[i] +
+        "='" +
+        Object.values(req.body)[i] +
+        "' WHERE id='" +
+        req.query.id +
+        "'";
+      con.query(sql, function (err, result) {
+        if (err) throw err;
+        res.status(200).send({ message: "success" });
+      });
+    }
   }
-});
+);
 
 app.post("/user/logout", userAuthentication, (req, res) => {
   var sql =
