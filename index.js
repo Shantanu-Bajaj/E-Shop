@@ -12,7 +12,7 @@ import adminAuthentication from "./middlewares/adminAuthentication.js";
 import openRouter from "./routes/openRoutes.js"
 
 dotenv.config();
-const PORT = 8080;
+const PORT = process.env.port || 8080;
 const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
