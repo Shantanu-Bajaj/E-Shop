@@ -12,7 +12,7 @@ import adminAuthentication from "./middlewares/adminAuthentication.js";
 import openRouter from "./routes/openRoutes.js"
 
 dotenv.config();
-const PORT = 80;
+const port = process.env.PORT;
 const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
@@ -26,5 +26,5 @@ app.use('/user/cart',userAuthentication, orderRouter)
 app.use('/admin/products',adminAuthentication, adminProductRouter)
 
 app.listen(PORT, () => {
-  console.log(`listening on port ${PORT}`);
+  console.log(`listening on port ${port}`);
 });
